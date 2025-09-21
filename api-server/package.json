@@ -1,0 +1,23 @@
+{
+	"name": "api-server",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"packageManager": "pnpm@10.15.0",
+	"dependencies": {
+		"@aws-sdk/client-ecs": "^3.893.0",
+		"cors": "^2.8.5",
+		"dotenv": "^17.2.2",
+		"express": "^5.1.0",
+		"random-word-slugs": "^0.1.7",
+		"redis": "^5.8.2",
+		"ws": "^8.18.3"
+	}
+}
