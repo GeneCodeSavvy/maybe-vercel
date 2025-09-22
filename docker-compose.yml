@@ -1,0 +1,29 @@
+services:
+  redis:
+    image : "redis:latest"
+    ports:
+      - 6379:6379
+  api-server:
+    build :
+      context : ./api-server/
+      dockerfile: Dockerfile
+    ports:
+      - 9000:9000
+    depends_on:
+      - redis
+  frontend:
+    build:
+      context : ./frontend/
+      dockerfile: Dockerfile
+    ports:
+      - 5173:5173
+    depends_on:
+      - api-server
+  reverse-proxy:
+    build:
+        context: ./reverse-proxy/
+        dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    depends_on:
+      - api-server
