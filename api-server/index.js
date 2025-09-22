@@ -1,4 +1,5 @@
-require("dotenv").config()
+import dotenv from "dotenv"
+dotenv.config()
 
 import { createClient } from "redis"
 import { ECSClient, RunTaskCommand } from "@aws-sdk/client-ecs"
@@ -52,9 +53,7 @@ app.post('/project', async (req, res) => {
             count: 1,
             networkConfiguration: {
                 awsvpcConfiguration: {
-                    subnets: [
-                        process.env.SUBNET_ID.split(','),
-                    ],
+                    subnets: process.env.SUBNET_ID.split(','),
                     securityGroups: [
                         process.env.SECURITY_GROUP_ID,
                     ],
@@ -66,7 +65,7 @@ app.post('/project', async (req, res) => {
                     name: process.env.CONTAINER_NAME,
                     environment: [
                         {
-                            name: "GIT_REPOSITORY_URL",
+                            name: "GIT_REPOSITORY__URL",
                             value: gitURL,
                         },
                         {

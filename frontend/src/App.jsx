@@ -103,19 +103,20 @@ function App() {
 
         try {
             const response = await axios.post('http://localhost:9000/project', {
-                gitUrl: repositoryUrl
+                gitURL: repositoryUrl
             })
 
             if (response.data.status === 'queued') {
                 setStatus('Project queued! Waiting for build to complete...')
                 const projectUrl = response.data.data.url
-                const projectSlug = response.data.data.project_slug
+                const projectId = response.data.data.project_id
+                const wssChannel = response.data.data.wss_channel
 
-                // Send project slug to WebSocket server to subscribe to logs
+                // Subscribe to build logs channel over WebSocket
                 if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(projectSlug)
+                    ws.send(wssChannel || `\u006c\u006f\u0067\u0073:${projectId}`)
                 } else if (ws) {
-                    ws.addEventListener('open', () => ws.send(projectSlug), { once: true })
+                    ws.addEventListener('open', () => ws.send(wssChannel || `\u006c\u006f\u0067\u0073:${projectId}`), { once: true })
                 }
 
                 await pollUntilReady(projectUrl)

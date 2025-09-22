@@ -2,9 +2,9 @@ FROM ubuntu
 
 RUN apt update -y && apt install curl -y
 
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 
-RUN install -y nodejs npm git
+RUN apt install nodejs git -y
 
 WORKDIR /home/app
 

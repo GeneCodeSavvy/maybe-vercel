@@ -1,0 +1,4 @@
+node_modules
+.env
+ssh-key-2025-09-20.key
+ssh-key-2025-09-20.key.pub
