@@ -10,6 +10,8 @@ WORKDIR /home/app
 
 COPY . .
 
+RUN npm install
+
 RUN chmod +x ./script.sh ./script.js
 
 ENTRYPOINT ["/home/app/script.sh"]
