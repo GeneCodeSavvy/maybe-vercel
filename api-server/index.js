@@ -2,7 +2,7 @@ import dotenv from "dotenv"
 dotenv.config()
 
 import { createClient } from "redis"
-import { ECSClient, RunTaskCommand } from "@aws-sdk/client-ecs"
+import child_process from "child_process"
 import { generateSlug } from "random-word-slugs"
 import express from "express"
 import { WebSocketServer } from "ws"
@@ -46,46 +46,17 @@ app.post('/project', async (req, res) => {
 
         const project_id = generateSlug()
 
-        const input = {
-            cluster: config.CLUSTER,
-            taskDefinition: config.TASK,
-            launchType: "FARGATE",
-            count: 1,
-            networkConfiguration: {
-                awsvpcConfiguration: {
-                    subnets: process.env.SUBNET_ID.split(','),
-                    securityGroups: [
-                        process.env.SECURITY_GROUP_ID,
-                    ],
-                    assignPublicIp: "ENABLED",
-                },
-            },
-            overrides: {
-                containerOverrides: [{
-                    name: process.env.CONTAINER_NAME,
-                    environment: [
-                        {
-                            name: "GIT_REPOSITORY__URL",
-                            value: gitURL,
-                        },
-                        {
-                            name: "PROJECT_ID",
-                            value: project_id,
-                        },
-                    ],
-                }]
-            }
-        }
+        const command = `docker run -v /var/run/docker.sock:/var/run/docker.sock -e GIT_REPO__URL=${gitURL} -e PROJECT_ID=${project_id} vercel-clone-builder`
 
-        const command = new RunTaskCommand(input)
-        const response = await ecsClient.send(command)
+        const p = child_process.exec(command)
+        p.on("message", (message) => {
+            console.log(message)
+        })
+        p.on("error", (err) => {
+            console.log(err)
+        })
 
         let status = "queued";
-
-        if (response.failures.length > 0) {
-            status = response.failures[0].reason;
-            return res.json({ "status": status, "data": {} })
-        }
 
         res.json({
             "status": status,
