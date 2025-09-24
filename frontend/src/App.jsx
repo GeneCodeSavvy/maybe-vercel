@@ -16,7 +16,7 @@ function App() {
     if (!ws) {
         const socket = new WebSocket(import.meta.env.VITE_WS_SOCKET_URL)
         socket.onopen = () => {
-            console.log('New Connection')
+            console.log('WebSocket established')
         }
         socket.onmessage = (event) => {
             const message = typeof event.data === 'string' ? event.data : '';
@@ -123,19 +123,24 @@ function App() {
                 </div>
             )}
 
-            <div className="logs-container" style={{ marginTop: 16 }}>
-                <h3 style={{ margin: 0 }}>Live build logs</h3>
+            <div className="logs-container" style={{
+                marginTop: 16,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "start"
+            }}>
+                <h3 style={{ margin: 0, }}>Live build logs</h3>
                 <pre style={{
-                    background: '#0b0b0b',
-                    color: '#e5e5e5',
-                    padding: 12,
-                    borderRadius: 8,
-                    maxHeight: 240,
-                    overflow: 'auto',
-                    fontSize: 12,
-                    lineHeight: '18px'
+                    background: 'var(--glass)',
+                    border: '1px solid var(--ring)',
+                    padding: '8px',
+                    borderRadius: '12px',
+                    backdropFilter: 'blur(8px)',
+                    marginTop: '10px',
+                    width: '100%'
                 }}>
-{logs.length ? logs.join('\n') : 'No logs yet'}
+                    {previousLogs.map((log, key) => (<p style={{ color: "rgba(255,255,255,0.55)" }}>{log}</p>))}
+                    {lastestLog}
                 </pre>
             </div>
 
@@ -169,7 +174,7 @@ function App() {
                 )
             }
         </div >
-    );
+    )
 }
 
 export default App;
