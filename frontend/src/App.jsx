@@ -14,7 +14,7 @@ function App() {
     const logsRef = useRef(null);
 
     if (!ws) {
-        const socket = new WebSocket(process.env.WS_SOCKET_URL)
+        const socket = new WebSocket(import.meta.env.VITE_WS_SOCKET_URL)
         socket.onopen = () => {
             console.log('New Connection')
         }
@@ -66,7 +66,7 @@ function App() {
         }
 
         try {
-            const response = await axios.post(`${process.env.BACKEND_URL}/project`, {
+            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/project`, {
                 gitURL: repositoryUrl
             });
 
