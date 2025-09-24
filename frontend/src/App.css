@@ -126,6 +126,15 @@ body {
 .logs-container {
     width: 100%;
     max-width: 720px;
+    overflow: auto;
+}
+
+.logs {
+    color: rgba(255,255,255,0.55) ;
+}
+
+.logs:last-child {
+    color: white;
 }
 
 .url-container {
