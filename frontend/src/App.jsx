@@ -1,6 +1,3 @@
-import dotenv from 'dotenv'
-dotenv.config()
-
 import { useState } from 'react'
 import axios from 'axios'
 import './App.css'
@@ -15,7 +12,7 @@ function App() {
     const [ws, setWs] = useState(null)
 
     if (!ws) {
-        const socket = new WebSocket(process.env.WS_SOCKET_URL)
+        const socket = new WebSocket(import.meta.env.VITE_WS_SOCKET_URL)
         socket.onopen = () => {
             console.log('New Connection')
         }
@@ -74,7 +71,7 @@ function App() {
         }
 
         try {
-            const response = await axios.post(`${process.env.BACKEND_URL}/project`, {
+            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/project`, {
                 gitURL: repositoryUrl
             })
 
