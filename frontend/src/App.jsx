@@ -1,3 +1,6 @@
+import dotenv from 'dotenv'
+dotenv.config()
+
 import { useState } from 'react'
 import axios from 'axios'
 import './App.css'
@@ -11,11 +14,10 @@ function App() {
     const [logs, setLogs] = useState([])
     const [ws, setWs] = useState(null)
 
-    // Establish WebSocket connection on load
     if (!ws) {
-        const socket = new WebSocket('ws://localhost:9000')
+        const socket = new WebSocket(process.env.WS_SOCKET_URL)
         socket.onopen = () => {
-            // Connection established
+            console.log('New Connection')
         }
         socket.onmessage = (event) => {
             const message = typeof event.data === 'string' ? event.data : ''
@@ -48,7 +50,7 @@ function App() {
         try {
             const response = await fetch(url, {
                 method: 'HEAD',
-                mode: 'no-cors' // This allows us to check if the page exists without CORS issues
+                mode: 'no-cors'
             })
             return true
         } catch (error) {
@@ -57,33 +59,6 @@ function App() {
     }
 
 
-    const pollUntilReady = async (url) => {
-        const maxAttempts = 30 // 5 minutes with 10 second intervals
-        let attempts = 0
-
-        while (attempts < maxAttempts) {
-            setStatus(`Checking if page is ready... (${attempts + 1}/${maxAttempts})`)
-
-            try {
-                const response = await fetch(url, {
-                    method: 'GET',
-                    mode: 'no-cors'
-                })
-
-                // If we get here without an error, the page is ready
-                setStatus('Page is ready!')
-                setProjectUrl(url)
-                return
-            } catch (error) {
-                // Page not ready yet, continue polling
-                attempts++
-                await new Promise(resolve => setTimeout(resolve, 10000)) // Wait 10 seconds
-            }
-        }
-
-        setStatus('Timeout: Page did not become ready in time')
-    }
-
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!gitUrl.trim()) return
@@ -91,18 +66,15 @@ function App() {
         setIsLoading(true)
         setStatus('Creating project...')
 
-        // Convert username to proper GitHub repository URL if needed
         let repositoryUrl = gitUrl.trim()
         if (!repositoryUrl.startsWith('http') && !repositoryUrl.includes('/')) {
-            // If it's just a username, assume it's a GitHub username and try to find a repo
             repositoryUrl = `https://github.com/${repositoryUrl}/${repositoryUrl}.github.io`
         } else if (!repositoryUrl.startsWith('http')) {
-            // If it's username/repo format, add the GitHub URL
             repositoryUrl = `https://github.com/${repositoryUrl}`
         }
 
         try {
-            const response = await axios.post('http://localhost:9000/project', {
+            const response = await axios.post(`${process.env.BACKEND_URL}/project`, {
                 gitURL: repositoryUrl
             })
 
@@ -112,7 +84,6 @@ function App() {
                 const projectId = response.data.data.project_id
                 const wssChannel = response.data.data.wss_channel
 
-                // Subscribe to build logs channel over WebSocket
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     ws.send(wssChannel || `\u006c\u006f\u0067\u0073:${projectId}`)
                 } else if (ws) {
@@ -162,7 +133,6 @@ function App() {
                 </div>
             )}
 
-            {/* Live Build Logs */}
             <div className="logs-container" style={{ marginTop: 16 }}>
                 <h3 style={{ margin: 0 }}>Live build logs</h3>
                 <pre style={{
