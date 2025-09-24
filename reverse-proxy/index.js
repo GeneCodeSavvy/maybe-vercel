@@ -1,11 +1,14 @@
+import dotenv from "dotenv";
+dotenv.config()
+
 import express from "express"
-import { createProxy } from "http-proxy"
+import httpProxy from "http-proxy"
 
 const app = express()
-const PORT = process.env.PORT || 8000
+const PORT = process.env.PORT
 const BASE_PATH = process.env.S3_URL
 
-const proxy = createProxy()
+const proxy = httpProxy.createProxyServer();
 
 app.use((req, res) => {
     const hostname = req.hostname;

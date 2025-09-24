@@ -14,20 +14,12 @@ const app = express()
 const server = createServer(app)
 const wss = new WebSocketServer({ server })
 const subscriber = createClient({ url: process.env.REDIS_CLIENT })
-const ecsClient = new ECSClient({
-    region: 'ap-southeast-2',
-    credentials: {
-        accessKeyId: process.env.ECS_CLIENT_ACCESS_ID,
-        secretAccessKey: process.env.ECS_CLIENT_SECRET_ACCESS_ID
-    }
-})
-const config = {
-    "TASK": process.env.TASK_ARN,
-    "CLUSTER": process.env.CLUSTER_ARN,
-}
 const corsOptions = {
-    origin: process.env.SUB_DOMAIN_URL,
-    optionsSuccessStatus: 200
+    origin: ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+    optionsSuccessStatus: 204
 }
 const PORT = process.env.PORT || 9000
 const redisChannels = new Map()
@@ -35,6 +27,13 @@ const redisChannels = new Map()
 
 app.use(express.json())
 app.use(cors(corsOptions))
+
+app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(204)
+    }
+    next()
+})
 
 app.post('/project', async (req, res) => {
     try {
@@ -46,9 +45,22 @@ app.post('/project', async (req, res) => {
 
         const project_id = generateSlug()
 
-        const command = `docker run -v /var/run/docker.sock:/var/run/docker.sock -e GIT_REPO__URL=${gitURL} -e PROJECT_ID=${project_id} vercel-clone-builder`
+
+        const command = `docker rm -f builder-container 2>/dev/null || true && \
+docker run  \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  --name builder-container \
+  --network vercel-clone-network \
+  -e GIT_REPOSITORY__URL=${gitURL} \
+  -e PROJECT_ID=${project_id} \
+  -e REDIS_CLIENT=${process.env.REDIS_CLIENT} \
+  -e ECS_CLIENT_ACCESS_ID=${process.env.ECS_CLIENT_ACCESS_ID} \
+  -e ECS_CLIENT_SECRET_ACCESS_ID=${process.env.ECS_CLIENT_SECRET_ACCESS_ID} \
+  vercel-clone-builder`;
+        console.log('it"s happening?')
 
         const p = child_process.exec(command)
+
         p.on("message", (message) => {
             console.log(message)
         })
@@ -94,6 +106,7 @@ const init = async () => {
                     await subscriber.subscribe(channel, (message) => {
                         if (socket.readyState === socket.OPEN) {
                             socket.send(message);
+                            console.log(message)
                         }
                     });
                 } catch (error) {

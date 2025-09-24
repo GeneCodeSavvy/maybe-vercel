@@ -12,6 +12,6 @@ COPY . .
 
 RUN npm install
 
-RUN chmod +x ./script.sh ./script.js
+RUN chmod +x ./script.sh
 
 ENTRYPOINT ["/home/app/script.sh"]
