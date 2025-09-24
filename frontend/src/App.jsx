@@ -14,10 +14,10 @@ function App() {
     const logsRef = useRef(null);
 
     if (!ws) {
-        const socket = new WebSocket('ws://localhost:9000');
+        const socket = new WebSocket(process.env.WS_SOCKET_URL)
         socket.onopen = () => {
-            console.log('WebSocket established');
-        };
+            console.log('New Connection')
+        }
         socket.onmessage = (event) => {
             const message = typeof event.data === 'string' ? event.data : '';
             if (message) {
@@ -58,15 +58,15 @@ function App() {
         setIsLoading(true);
         setStatus('Creating project...');
 
-        let repositoryUrl = gitUrl.trim();
+        let repositoryUrl = gitUrl.trim()
         if (!repositoryUrl.startsWith('http') && !repositoryUrl.includes('/')) {
-            repositoryUrl = `https://github.com/${repositoryUrl}/${repositoryUrl}.github.io`;
+            repositoryUrl = `https://github.com/${repositoryUrl}/${repositoryUrl}.github.io`
         } else if (!repositoryUrl.startsWith('http')) {
-            repositoryUrl = `https://github.com/${repositoryUrl}`;
+            repositoryUrl = `https://github.com/${repositoryUrl}`
         }
 
         try {
-            const response = await axios.post('http://localhost:9000/project', {
+            const response = await axios.post(`${process.env.BACKEND_URL}/project`, {
                 gitURL: repositoryUrl
             });
 
@@ -123,31 +123,20 @@ function App() {
                 </div>
             )}
 
-            <div className="logs-container" style={{
-                marginTop: 16,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "start"
-            }}>
-                <h3 style={{ margin: 0, }}>Live build logs</h3>
-                <div
-                    ref={logsRef} // Attach the ref here
-                    style={{
-                        background: 'var(--glass)',
-                        border: '1px solid var(--ring)',
-                        padding: '8px',
-                        borderRadius: '12px',
-                        backdropFilter: 'blur(8px)',
-                        marginTop: '10px',
-                        width: '100%',
-                        height: '200px', // Fixed height to enable scrolling
-                        overflowY: 'auto' // Make it scrollable
-                    }}
-                >
-                    {logs.map((log, key) => (
-                        <p className='logs' key={key} >{log}</p>
-                    ))}
-                </div>
+            <div className="logs-container" style={{ marginTop: 16 }}>
+                <h3 style={{ margin: 0 }}>Live build logs</h3>
+                <pre style={{
+                    background: '#0b0b0b',
+                    color: '#e5e5e5',
+                    padding: 12,
+                    borderRadius: 8,
+                    maxHeight: 240,
+                    overflow: 'auto',
+                    fontSize: 12,
+                    lineHeight: '18px'
+                }}>
+{logs.length ? logs.join('\n') : 'No logs yet'}
+                </pre>
             </div>
 
             {
