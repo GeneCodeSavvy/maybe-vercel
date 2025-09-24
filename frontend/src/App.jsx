@@ -14,10 +14,10 @@ function App() {
     const logsRef = useRef(null);
 
     if (!ws) {
-        const socket = new WebSocket(import.meta.env.VITE_WS_SOCKET_URL)
+        const socket = new WebSocket('ws://localhost:9000');
         socket.onopen = () => {
-            console.log('WebSocket established')
-        }
+            console.log('WebSocket established');
+        };
         socket.onmessage = (event) => {
             const message = typeof event.data === 'string' ? event.data : '';
             if (message) {
@@ -58,11 +58,11 @@ function App() {
         setIsLoading(true);
         setStatus('Creating project...');
 
-        let repositoryUrl = gitUrl.trim()
+        let repositoryUrl = gitUrl.trim();
         if (!repositoryUrl.startsWith('http') && !repositoryUrl.includes('/')) {
-            repositoryUrl = `https://github.com/${repositoryUrl}/${repositoryUrl}.github.io`
+            repositoryUrl = `https://github.com/${repositoryUrl}/${repositoryUrl}.github.io`;
         } else if (!repositoryUrl.startsWith('http')) {
-            repositoryUrl = `https://github.com/${repositoryUrl}`
+            repositoryUrl = `https://github.com/${repositoryUrl}`;
         }
 
         try {
@@ -130,18 +130,24 @@ function App() {
                 alignItems: "start"
             }}>
                 <h3 style={{ margin: 0, }}>Live build logs</h3>
-                <pre style={{
-                    background: 'var(--glass)',
-                    border: '1px solid var(--ring)',
-                    padding: '8px',
-                    borderRadius: '12px',
-                    backdropFilter: 'blur(8px)',
-                    marginTop: '10px',
-                    width: '100%'
-                }}>
-                    {previousLogs.map((log, key) => (<p style={{ color: "rgba(255,255,255,0.55)" }}>{log}</p>))}
-                    {lastestLog}
-                </pre>
+                <div
+                    ref={logsRef} // Attach the ref here
+                    style={{
+                        background: 'var(--glass)',
+                        border: '1px solid var(--ring)',
+                        padding: '8px',
+                        borderRadius: '12px',
+                        backdropFilter: 'blur(8px)',
+                        marginTop: '10px',
+                        width: '100%',
+                        height: '200px', // Fixed height to enable scrolling
+                        overflowY: 'auto' // Make it scrollable
+                    }}
+                >
+                    {logs.map((log, key) => (
+                        <p className='logs' key={key} >{log}</p>
+                    ))}
+                </div>
             </div>
 
             {
