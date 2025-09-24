@@ -10,16 +10,24 @@ function App() {
     const [copySuccess, setCopySuccess] = useState('')
     const [logs, setLogs] = useState([])
     const [ws, setWs] = useState(null)
+    const [lastestLog, setLatestLog] = useState('')
+    const [previousLogs, setPerviousLogs] = useState([])
 
     if (!ws) {
         const socket = new WebSocket(import.meta.env.VITE_WS_SOCKET_URL)
         socket.onopen = () => {
-            console.log('New Connection')
+            console.log('WebSocket established')
         }
         socket.onmessage = (event) => {
             const message = typeof event.data === 'string' ? event.data : ''
+
             if (message) {
-                setLogs((prev) => [...prev, message])
+                if (!lastestLog) {
+                    setLatestLogs(message)
+                } else {
+                    setPerviousLogs(prev => [...prev, lastestLog])
+                    setLatestLog(message)
+                }
             }
         }
         socket.onerror = (err) => {
@@ -42,19 +50,6 @@ function App() {
             setTimeout(() => setCopySuccess(''), 2000)
         }
     }
-
-    const checkPageReady = async (url) => {
-        try {
-            const response = await fetch(url, {
-                method: 'HEAD',
-                mode: 'no-cors'
-            })
-            return true
-        } catch (error) {
-            return false
-        }
-    }
-
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -100,7 +95,7 @@ function App() {
     return (
         <div className="app">
             <div className="header">
-                <h1>Vercel Clone by @harsh_twtt</h1>
+                <h1 style={{ color: 'white', fontSize: '25px' }}>Vercel by <a style={{ textDecoration: 'none' }} href="https://x.com/intent/follow?screen_name=harsh_twtt" target='_blank'>@harsh_twtt</a></h1>
             </div>
 
             <div className="form-container">
@@ -130,49 +125,56 @@ function App() {
                 </div>
             )}
 
-            <div className="logs-container" style={{ marginTop: 16 }}>
-                <h3 style={{ margin: 0 }}>Live build logs</h3>
+            <div className="logs-container" style={{
+                marginTop: 16,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "start"
+            }}>
+                <h3 style={{ margin: 0, }}>Live build logs</h3>
                 <pre style={{
-                    background: '#0b0b0b',
-                    color: '#e5e5e5',
-                    padding: 12,
-                    borderRadius: 8,
-                    maxHeight: 240,
-                    overflow: 'auto',
-                    fontSize: 12,
-                    lineHeight: '18px'
+                    background: 'var(--glass)',
+                    border: '1px solid var(--ring)',
+                    padding: '8px',
+                    borderRadius: '12px',
+                    backdropFilter: 'blur(8px)',
+                    marginTop: '10px',
+                    width: '100%'
                 }}>
-{logs.length ? logs.join('\n') : 'No logs yet'}
+                    {previousLogs.map((log, key) => (<p style={{ color: "rgba(255,255,255,0.55)" }}>{log}</p>))}
+                    {lastestLog}
                 </pre>
             </div>
 
-            {projectUrl && (
-                <div className="url-container">
-                    <div className="url-display">
-                        <span className="url-label">Your project is ready at:</span>
-                        <div className="url-input-group">
-                            <input
-                                type="text"
-                                value={projectUrl}
-                                readOnly
-                                className="url-input"
-                            />
-                            <button
-                                onClick={() => copyToClipboard(projectUrl)}
-                                className="copy-button"
-                            >
-                                {copySuccess || 'Copy'}
-                            </button>
-                        </div>
-                        {copySuccess && (
-                            <div className="copy-feedback">
-                                {copySuccess}
+            {
+                projectUrl && (
+                    <div className="url-container">
+                        <div className="url-display">
+                            <span className="url-label">Your project is ready at:</span>
+                            <div className="url-input-group">
+                                <input
+                                    type="text"
+                                    value={projectUrl}
+                                    readOnly
+                                    className="url-input"
+                                />
+                                <button
+                                    onClick={() => copyToClipboard(projectUrl)}
+                                    className="copy-button"
+                                >
+                                    {copySuccess || 'Copy'}
+                                </button>
                             </div>
-                        )}
+                            {copySuccess && (
+                                <div className="copy-feedback">
+                                    {copySuccess}
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 }
 
