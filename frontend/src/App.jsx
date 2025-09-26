@@ -66,7 +66,7 @@ function App() {
         }
 
         try {
-            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/project`, {
+            const response = await axios.post(`https://api.vercel.harsh-dev.xyz/project`, {
                 gitURL: repositoryUrl
             });
 
@@ -77,9 +77,9 @@ function App() {
                 const wssChannel = response.data.data.wss_channel;
 
                 if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(wssChannel || `\u006c\u006f\u0067\u0073:${projectId}`);
+                    ws.send(wssChannel || `logs:${projectId}`);
                 } else if (ws) {
-                    ws.addEventListener('open', () => ws.send(wssChannel || `\u006c\u006f\u0067\u0073:${projectId}`), { once: true });
+                    ws.addEventListener('open', () => ws.send(wssChannel || `logs:${projectId}`), { once: true });
                 }
             }
         } catch (error) {
