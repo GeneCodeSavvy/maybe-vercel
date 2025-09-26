@@ -3,7 +3,7 @@ import httpProxy from "http-proxy"
 import cors from 'cors'
 
 const app = express()
-const PORT = process.env.PORT || 9000
+const PORT = process.env.PORT
 const BASE_PATH = process.env.S3_URL
 
 const proxy = createProxy()
