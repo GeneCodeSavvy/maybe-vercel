@@ -8,7 +8,7 @@ const BASE_PATH = process.env.S3_URL
 
 const proxy = createProxy()
 
-const DYNAMIC_LOCALHOST_REGEX = /^https?:\/\/(.+\.)?localhost:8000/;
+const DYNAMIC_LOCALHOST_REGEX = /^https?:\/\/(.+\.)?vercel.harsh-dev.xyz:8000/;
 
 const corsConfig = {
     origin: DYNAMIC_LOCALHOST_REGEX,
