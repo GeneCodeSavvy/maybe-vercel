@@ -6,7 +6,7 @@ const app = express()
 const PORT = process.env.PORT
 const BASE_PATH = process.env.S3_URL
 
-const proxy = createProxy()
+const proxy = httpProxy.createProxy()
 
 const DYNAMIC_LOCALHOST_REGEX = /^https?:\/\/(.+\.)?vercel.harsh-dev.xyz:8000/;
 
