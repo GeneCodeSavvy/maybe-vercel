@@ -1,12 +1,21 @@
 import express from "express"
-import { createProxy } from "http-proxy"
+import httpProxy from "http-proxy"
+import cors from 'cors'
 
 const app = express()
-const PORT = process.env.PORT || 8000
+const PORT = process.env.PORT || 9000
 const BASE_PATH = process.env.S3_URL
 
 const proxy = createProxy()
 
+const DYNAMIC_LOCALHOST_REGEX = /^https?:\/\/(.+\.)?localhost:8000/;
+
+const corsConfig = {
+    origin: DYNAMIC_LOCALHOST_REGEX,
+    credentials: true,
+};
+
+app.use(cors(corsConfig));
 app.use((req, res) => {
     const hostname = req.hostname;
     const subdomain = hostname.split('.')[0];
@@ -21,4 +30,4 @@ proxy.on('proxyReq', (proxyReq, req, res) => {
         proxyReq.path += 'index.html'
 })
 
-app.listen(PORT, () => console.log(`Reverse Proxy Running..${PORT}`))
+app.listen(PORT, () => console.log(`Reverse Proxy Running on Port ${PORT}`))
