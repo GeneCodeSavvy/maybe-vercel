@@ -33,56 +33,57 @@ const publishLog = async (log) => {
     }
 }
 
-// async function init() {
-publisher.on("connect", async () => {
-    console.log('Executing script.js')
-    publishLog('Build Started...')
-    const outDirPath = path.join(__dirname, 'output')
+async function init() {
+    publisher.on("connect", async () => {
+        console.log('Executing script.js')
+        publishLog('Build Started...')
+        const outDirPath = path.join(__dirname, 'output')
 
-    const p = exec(`cd ${outDirPath} && npm install && npm run build`)
+        const p = exec(`cd ${outDirPath} && npm install && npm run build`)
 
-    p.stdout.on('data', function(data) {
-        console.log(data.toString())
-        publishLog(data.toString())
+        p.stdout.on('data', function(data) {
+            console.log(data.toString())
+            publishLog(data.toString())
+        })
+
+        p.stdout.on('error', function(data) {
+            console.log('Error', data.toString())
+            publishLog(`error: ${data.toString()}`)
+        })
+
+        p.on('close', async function() {
+            console.log('Build Complete')
+            publishLog(`Build Complete`)
+            const distFolderPath = path.join(__dirname, 'output', 'dist')
+            const distFolderContents = fs.readdirSync(distFolderPath, { recursive: true })
+
+            publishLog(`Starting to upload`)
+            for (const file of distFolderContents) {
+                const filePath = path.join(distFolderPath, file)
+                if (fs.lstatSync(filePath).isDirectory()) continue;
+
+                console.log('uploading', filePath)
+                publishLog(`uploading ${file}`)
+
+                const command = new PutObjectCommand({
+                    Bucket: 'vercel-clone-builder',
+                    Key: `__outputs/${PROJECT_ID}/${file}`,
+                    Body: fs.createReadStream(filePath),
+                    ContentType: mime.lookup(filePath)
+                })
+
+                await s3Client.send(command)
+                publishLog(`uploaded ${file}`)
+                console.log('uploaded', filePath)
+            }
+            publishLog(`Done`)
+            console.log('Done...')
+        })
     })
 
-    p.stdout.on('error', function(data) {
-        console.log('Error', data.toString())
-        publishLog(`error: ${data.toString()}`)
+    publisher.on("error", (e) => {
+        console.log(e);
     })
+}
 
-    p.on('close', async function() {
-        console.log('Build Complete')
-        publishLog(`Build Complete`)
-        const distFolderPath = path.join(__dirname, 'output', 'dist')
-        const distFolderContents = fs.readdirSync(distFolderPath, { recursive: true })
-
-        publishLog(`Starting to upload`)
-        for (const file of distFolderContents) {
-            const filePath = path.join(distFolderPath, file)
-            if (fs.lstatSync(filePath).isDirectory()) continue;
-
-            console.log('uploading', filePath)
-            publishLog(`uploading ${file}`)
-
-            const command = new PutObjectCommand({
-                Bucket: 'vercel-clone-builder',
-                Key: `__outputs/${PROJECT_ID}/${file}`,
-                Body: fs.createReadStream(filePath),
-                ContentType: mime.lookup(filePath)
-            })
-
-            await s3Client.send(command)
-            publishLog(`uploaded ${file}`)
-            console.log('uploaded', filePath)
-        }
-        publishLog(`Done`)
-        console.log('Done...')
-    })
-})
-// }
-
-publisher.on("error", (e) => {
-    console.log(e);
-})
-// init()
+init()
