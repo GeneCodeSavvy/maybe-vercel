@@ -22,12 +22,21 @@ jobs:
           DEPLOY_PATH="/home/${{ secrets.SSH_USER }}/app/vercel-clone"
           APP_NAME="vercel-be"
           
-          cd $DEPLOY_PATH
+          cd $DEPLOY_PATH || exit 1
 
-          git checkout deployment
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
           
-          git pull origin deployment 
+          nvm use || nvm install node --default
 
-          npm install
+          git switch deployment || exit 1
+          
+          git pull --ff-only origin deployment || exit 1
 
-          pm2 reload $APP_NAME
+          npm install --production || exit 1
+
+          if pm2 describe $APP_NAME > /dev/null; then
+            pm2 reload $APP_NAME || exit 1
+          else
+            echo "PM2 app $APP_NAME not found. Skipping reload."
+          fi
