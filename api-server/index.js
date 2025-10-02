@@ -2,7 +2,7 @@ import dotenv from "dotenv"
 dotenv.config()
 
 import { createClient } from "redis"
-import child_process from "child_process"
+import { ECSClient, RunTaskCommand } from "@aws-sdk/client-ecs"
 import { generateSlug } from "random-word-slugs"
 import express from "express"
 import { WebSocketServer } from "ws"
@@ -14,12 +14,20 @@ const app = express()
 const server = createServer(app)
 const wss = new WebSocketServer({ server })
 const subscriber = createClient({ url: process.env.REDIS_CLIENT })
+const ecsClient = new ECSClient({
+    region: 'ap-southeast-2',
+    credentials: {
+        accessKeyId: process.env.ECS_CLIENT_ACCESS_ID,
+        secretAccessKey: process.env.ECS_CLIENT_SECRET_ACCESS_ID
+    }
+})
+const config = {
+    "TASK": process.env.TASK_ARN,
+    "CLUSTER": process.env.CLUSTER_ARN,
+}
 const corsOptions = {
-    origin: ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-    optionsSuccessStatus: 204
+    origin: process.env.SUB_DOMAIN_URL,
+    optionsSuccessStatus: 200
 }
 const PORT = process.env.PORT || 9000
 const redisChannels = new Map()
@@ -27,13 +35,6 @@ const redisChannels = new Map()
 
 app.use(express.json())
 app.use(cors(corsOptions))
-
-app.use((req, res, next) => {
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(204)
-    }
-    next()
-})
 
 app.post('/project', async (req, res) => {
     try {
@@ -45,30 +46,46 @@ app.post('/project', async (req, res) => {
 
         const project_id = generateSlug()
 
+        const input = {
+            cluster: config.CLUSTER,
+            taskDefinition: config.TASK,
+            launchType: "FARGATE",
+            count: 1,
+            networkConfiguration: {
+                awsvpcConfiguration: {
+                    subnets: process.env.SUBNET_ID.split(','),
+                    securityGroups: [
+                        process.env.SECURITY_GROUP_ID,
+                    ],
+                    assignPublicIp: "ENABLED",
+                },
+            },
+            overrides: {
+                containerOverrides: [{
+                    name: process.env.CONTAINER_NAME,
+                    environment: [
+                        {
+                            name: "GIT_REPOSITORY__URL",
+                            value: gitURL,
+                        },
+                        {
+                            name: "PROJECT_ID",
+                            value: project_id,
+                        },
+                    ],
+                }]
+            }
+        }
 
-        const command = `docker rm -f builder-container 2>/dev/null || true && \
-docker run  \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  --name builder-container \
-  --network vercel-clone-network \
-  -e GIT_REPOSITORY__URL=${gitURL} \
-  -e PROJECT_ID=${project_id} \
-  -e REDIS_CLIENT=${process.env.REDIS_CLIENT} \
-  -e ECS_CLIENT_ACCESS_ID=${process.env.ECS_CLIENT_ACCESS_ID} \
-  -e ECS_CLIENT_SECRET_ACCESS_ID=${process.env.ECS_CLIENT_SECRET_ACCESS_ID} \
-  vercel-clone-builder`;
-        console.log('it"s happening?')
-
-        const p = child_process.exec(command)
-
-        p.on("message", (message) => {
-            console.log(message)
-        })
-        p.on("error", (err) => {
-            console.log(err)
-        })
+        const command = new RunTaskCommand(input)
+        const response = await ecsClient.send(command)
 
         let status = "queued";
+
+        if (response.failures.length > 0) {
+            status = response.failures[0].reason;
+            return res.json({ "status": status, "data": {} })
+        }
 
         res.json({
             "status": status,
@@ -106,7 +123,6 @@ const init = async () => {
                     await subscriber.subscribe(channel, (message) => {
                         if (socket.readyState === socket.OPEN) {
                             socket.send(message);
-                            console.log(message)
                         }
                     });
                 } catch (error) {

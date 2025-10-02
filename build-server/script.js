@@ -17,13 +17,17 @@ const PROJECT_ID = process.env.PROJECT_ID
 const publisher = createClient({ url: process.env.REDIS_CLIENT })
 publisher.connect()
 
-const s3Client = new S3Client({
-    region: 'ap-southeast-2',
-    credentials: {
-        accessKeyId: process.env.ECS_CLIENT_ACCESS_ID,
-        secretAccessKey: process.env.ECS_CLIENT_SECRET_ACCESS_ID
-    }
-})
+try {
+    publisher = createClient({ url: process.env.REDIS_CLIENT })
+    await publisher.connect()
+
+    s3Client = new S3Client({
+        region: 'ap-southeast-2'
+    })
+} catch (error) {
+    console.error('Failed to initialize clients:', error)
+    process.exit(1)
+}
 
 const publishLog = async (log) => {
     try {
