@@ -1,4 +1,4 @@
-name: Deploy to VM
+name: Deploy to VM - Robust
 
 on:
   push:
@@ -9,34 +9,39 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Deploy and restart with PM2
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          DEPLOY_PATH="/home/${{ secrets.SSH_USER }}/app/vercel-clone"
-          APP_NAME="vercel-be"
-          
-          cd $DEPLOY_PATH || exit 1
+      - name: Deploy and restart with PM2 (Robust Git Update)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            DEPLOY_PATH="/home/${{ secrets.SSH_USER }}/app/vercel-clone"
+            APP_NAME="vercel-be"
+            
+            cd $DEPLOY_PATH || { echo "Error: Failed to change directory to $DEPLOY_PATH"; exit 1; }
 
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          
-          nvm use || nvm install node --default
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-          git switch deployment || exit 1
-          
-          git pull --ff-only origin deployment || exit 1
+            nvm use || nvm install node --default || { echo "Error: Failed to use or install Node.js"; exit 1; }
 
-          npm install --production || exit 1
+            git switch deployment || { echo "Error: Failed to switch to branch 'deployment'"; exit 1; }
+            
+            git fetch origin || { echo "Error: Failed to fetch from origin"; exit 1; }
+            
+            git reset --hard origin/deployment || { echo "Error: Failed to perform hard reset"; exit 1; }
+            
+            git clean -df || { echo "Error: Failed to clean untracked files"; exit 1; }
 
-          if pm2 describe $APP_NAME > /dev/null; then
-            pm2 reload $APP_NAME || exit 1
-          else
-            echo "PM2 app $APP_NAME not found. Skipping reload."
-          fi
+            npm run install:all || { echo "Error: Failed to run npm install"; exit 1; }
+
+            if pm2 describe $APP_NAME > /dev/null; then
+              echo "PM2 app $APP_NAME found. Reloading..."
+              pm2 reload $APP_NAME || { echo "Error: Failed to reload PM2 app $APP_NAME"; exit 1; }
+            else
+              echo "PM2 app $APP_NAME not found. Skipping reload."
+            fi
