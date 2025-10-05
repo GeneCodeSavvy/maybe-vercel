@@ -4,7 +4,6 @@ ssh-key-2025-09-20.key
 ssh-key-2025-09-20.key.pub
 package-lock.json
 build-server/test.js
-ssh-key-2025-09-29.key
-ssh-key-2025-09-29.key.pub
-frontend/deploy_key
-frontend/deploy_key.pub
+.DS_Store
+*key*
+*.pem
