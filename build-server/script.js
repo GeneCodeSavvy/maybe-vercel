@@ -21,9 +21,7 @@ try {
     publisher = createClient({ url: process.env.REDIS_CLIENT })
     await publisher.connect()
 
-    s3Client = new S3Client({
-        region: 'ap-southeast-2'
-    })
+    s3Client = new S3Client({ region: 'ap-southeast-2' })
 } catch (error) {
     console.error('Failed to initialize clients:', error)
     process.exit(1)
