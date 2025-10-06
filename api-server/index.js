@@ -9,27 +9,37 @@ import { WebSocketServer } from "ws"
 import { createServer } from "http"
 import cors from "cors"
 
-
 const app = express()
 const server = createServer(app)
 const wss = new WebSocketServer({ server })
-const subscriber = createClient({ url: process.env.REDIS_CLIENT })
+
+const REDIS_CLIENT = process.env.REDIS_CLIENT
+const ECS_CLIENT_ACCESS_ID = process.env.ECS_CLIENT_ACCESS_ID
+const ECS_CLIENT_SECRET_ACCESS_ID = process.env.ECS_CLIENT_SECRET_ACCESS_ID
+const TASK_ARN = process.env.TASK_ARN
+const CLUSTER_ARN = process.env.CLUSTER_ARN
+const SUB_DOMAIN_URL = process.env.SUB_DOMAIN_URL
+const PORT = process.env.PORT || 9000
+const SUBNET_ID = process.env.SUBNET_ID.split(',')
+const SECURITY_GROUP_ID = process.env.SECURITY_GROUP_ID
+const CONTAINER_NAME = process.env.CONTAINER_NAME
+
+const subscriber = createClient({ url: REDIS_CLIENT })
 const ecsClient = new ECSClient({
     region: 'ap-southeast-2',
     credentials: {
-        accessKeyId: process.env.ECS_CLIENT_ACCESS_ID,
-        secretAccessKey: process.env.ECS_CLIENT_SECRET_ACCESS_ID
+        accessKeyId: ECS_CLIENT_ACCESS_ID,
+        secretAccessKey: ECS_CLIENT_SECRET_ACCESS_ID
     }
 })
 const config = {
-    "TASK": process.env.TASK_ARN,
-    "CLUSTER": process.env.CLUSTER_ARN,
+    "TASK": TASK_ARN,
+    "CLUSTER": CLUSTER_ARN,
 }
 const corsOptions = {
-    origin: process.env.SUB_DOMAIN_URL,
+    origin: SUB_DOMAIN_URL,
     optionsSuccessStatus: 200
 }
-const PORT = process.env.PORT || 9000
 const redisChannels = new Map()
 
 
@@ -53,16 +63,16 @@ app.post('/project', async (req, res) => {
             count: 1,
             networkConfiguration: {
                 awsvpcConfiguration: {
-                    subnets: process.env.SUBNET_ID.split(','),
+                    subnets: SUBNET_ID,
                     securityGroups: [
-                        process.env.SECURITY_GROUP_ID,
+                        SECURITY_GROUP_ID,
                     ],
                     assignPublicIp: "ENABLED",
                 },
             },
             overrides: {
                 containerOverrides: [{
-                    name: process.env.CONTAINER_NAME,
+                    name: CONTAINER_NAME,
                     environment: [
                         {
                             name: "GIT_REPOSITORY__URL",
@@ -91,7 +101,7 @@ app.post('/project', async (req, res) => {
             "status": status,
             "data": {
                 project_id,
-                url: `http://${project_id}.${process.env.SUB_DOMAIN_URL}`,
+                url: `http://${project_id}.${SUB_DOMAIN_URL}`,
                 wss_channel: `logs:${project_id}`
             }
         })
