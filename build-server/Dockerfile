@@ -3,12 +3,10 @@ FROM node:20-slim
 WORKDIR /home/app
 
 RUN apt-get update && \
-    apt-get install -y git && \
+    apt-get install -y git curl && \
     rm -rf /var/lib/apt/lists/*
 
-COPY script.js script.js
-COPY script.sh script.sh
-COPY package*.json .
+COPY . .
 
 RUN npm install
 
