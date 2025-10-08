@@ -4,8 +4,8 @@
 	"main": "index.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"install:all": "npm --prefix api-server install && npm --prefix build-server install && npm --prefix reverse-proxy install && npm --prefix frontend install",
-		"start:all": "concurrently \"npm --prefix reverse-proxy start\" \"npm --prefix frontend start\""
+		"install:all": "npm install && npm --prefix api-server install && npm --prefix build-server install && npm --prefix reverse-proxy install && npm --prefix frontend install",
+		"start:all": "concurrently \"npm --prefix reverse-proxy start\" \"npm --prefix api-server start\""
 	},
 	"author": "harsh sharma",
 	"license": "ISC",
