@@ -18,7 +18,7 @@ let publisher
 let s3Client
 
 try {
-    publisher = createClient({ url: process.env.REDIS_CLIENT })
+    publisher = createClient({ url: process.env.REDIS_CLIENT, })
     await publisher.connect()
 
     s3Client = new S3Client({ region: 'ap-southeast-2' })
