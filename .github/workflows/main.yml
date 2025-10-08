@@ -1,4 +1,4 @@
-name: Deploy to VM - Robust
+name: Deploy to VM
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy and restart with PM2 (Robust Git Update)
+      - name: Deploy and restart with PM2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
