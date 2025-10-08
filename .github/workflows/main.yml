@@ -22,7 +22,7 @@ jobs:
             DEPLOY_PATH="/home/${{ secrets.SSH_USER }}/app/vercel-clone"
             APP_NAME="vercel-be"
             
-            cd $DEPLOY_PATH || { echo "Error: Failed to change directory to $DEPLOY_PATH"; exit 1; }
+            cd $DEPLOY_PATH || ( mkdir -p "$DEPLOY_PATH" && git clone "https://github.com/GeneCodeSavvy/vercel-clone.git" "$DEPLOY_PATH" && cd "$DEPLOY_PATH" )
 
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -43,5 +43,6 @@ jobs:
               echo "PM2 app $APP_NAME found. Reloading..."
               pm2 reload $APP_NAME || { echo "Error: Failed to reload PM2 app $APP_NAME"; exit 1; }
             else
-              echo "PM2 app $APP_NAME not found. Skipping reload."
+              echo "PM2 app $APP_NAME not found. Starting pm2."
+              pm2 start npm --name vercel-be --run start:all || { echo "Error: Failed to start PM2 app $APP_NAME"; exit 1; }
             fi
