@@ -25,7 +25,7 @@ const s3Client = new S3Client({
     },
 });
 
-// Using a more flexible regex for CORS origins
+// Configure CORS
 const DYNAMIC_DEPLOYMENT_REGEX = "https://api.vercel.harsh-dev.xyz"
 const DYNAMIC_LOCALHOST_REGEX = "http://localhost:8000"
 app.use(
@@ -35,26 +35,54 @@ app.use(
     })
 );
 
+// Middleware to set 'trust proxy' if you are behind Caddy/Nginx/Load Balancer.
+// This is critical for getting correct IP/Protocol/Host from X-Forwarded-* headers.
+app.set('trust proxy', true);
+
+// -------------------------------------------------------------------------
+// CORE LOGIC: Dynamic Path Resolution for Nested Deployments
+// -------------------------------------------------------------------------
+
+// Regex to capture the project name (the first segment after the initial slash)
+// and the resource path (everything after the project name).
+// Example: /project-A/static/js/app.js 
+// Match 1: project-A
+// Match 2: /static/js/app.js
+const PROJECT_PATH_REGEX = /^\/([a-zA-Z0-9\-\_]+)(.*)$/;
+
 app.use(async (req, res) => {
     try {
-        // Because Caddy's `handle_path` strips the prefix, `req.path` will contain the path *after* `/preview`. For example, a request to /preview/folder/page.html results in req.path being '/folder/page.html'.
-        let key = req.path;
+        const path = req.path;
+        console.log(`Incoming Path: ${path}`); // Log the full path received from the reverse proxy
 
-        // If the path ends with a '/', or is empty, assume it's a directory and append 'index.html'.
-        if (key.endsWith('/') || key === '') {
-            key += "index.html";
+        // 1. Check for the project name and the remaining resource path
+        const match = path.match(PROJECT_PATH_REGEX);
+
+        if (!match) {
+            // Handle the root path (/) or any unrecognised format
+            return res.status(404).send("Not Found or Missing Project Name in URL");
         }
 
-        // Remove the leading slash to form a valid S3 key.
-        const s3Key = key.startsWith('/') ? key.substring(1) : key;
+        const projectName = match[1]; // e.g., 'average-abundant-australia'
+        let resourcePath = match[2];  // e.g., '' or '/static/js/main.js'
 
-        if (!s3Key) {
-            return res.status(404).send("Not Found");
+        // 2. Determine the full S3 Key based on the resource path
+        if (resourcePath === '' || resourcePath === '/') {
+            // It's a directory/root request for the project, so fetch index.html
+            resourcePath = "/index.html";
         }
+
+        // Remove the leading slash from the resourcePath (e.g., '/index.html' -> 'index.html')
+        const finalResourceKey = resourcePath.startsWith('/') ? resourcePath.substring(1) : resourcePath;
+
+        // Construct the full S3 Key
+        const s3Key = `__outputs/${projectName}/${finalResourceKey}`;
+
+        console.log(`S3 Key: ${s3Key}`);
 
         const command = new GetObjectCommand({
             Bucket: S3_BUCKET_NAME,
-            Key: `__outputs/${s3Key}`,
+            Key: s3Key,
         });
 
         const response = await s3Client.send(command);
@@ -77,11 +105,13 @@ app.use(async (req, res) => {
         response.Body.pipe(res);
 
     } catch (error) {
-        console.error("Error accessing S3:", error);
+        console.error("Error accessing S3:", error.name, error);
 
         if (error.name === "NoSuchKey") {
+            // Log for a missing file
             res.status(404).send("Not Found");
         } else {
+            // Log for S3 or general server errors
             res.status(500).send("Internal Server Error");
         }
     }
