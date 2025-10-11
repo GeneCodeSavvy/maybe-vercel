@@ -25,8 +25,9 @@ const s3Client = new S3Client({
     },
 });
 
-const DYNAMIC_DEPLOYMENT_REGEX = /^https?:\/\/(.+\.)?vercel\.harsh-dev\.xyz(:\d+)?$/;
-const DYNAMIC_LOCALHOST_REGEX = /^https?:\/\/(.+\.)?localhost(:\d+)?$/;
+// Using a more flexible regex for CORS origins
+const DYNAMIC_DEPLOYMENT_REGEX = "https://api.vercel.harsh-dev.xyz"
+const DYNAMIC_LOCALHOST_REGEX = "http://localhost:8000"
 app.use(
     cors({
         origin: [DYNAMIC_DEPLOYMENT_REGEX, DYNAMIC_LOCALHOST_REGEX],
@@ -36,17 +37,24 @@ app.use(
 
 app.use(async (req, res) => {
     try {
-        const hostname = req.hostname;
-        const subdomain = hostname.split(".")[0];
-        let key = `${subdomain}${req.url}`;
+        // Because Caddy's `handle_path` strips the prefix, `req.path` will contain the path *after* `/preview`. For example, a request to /preview/folder/page.html results in req.path being '/folder/page.html'.
+        let key = req.path;
 
-        if (key.endsWith("/")) {
+        // If the path ends with a '/', or is empty, assume it's a directory and append 'index.html'.
+        if (key.endsWith('/') || key === '') {
             key += "index.html";
+        }
+
+        // Remove the leading slash to form a valid S3 key.
+        const s3Key = key.startsWith('/') ? key.substring(1) : key;
+
+        if (!s3Key) {
+            return res.status(404).send("Not Found");
         }
 
         const command = new GetObjectCommand({
             Bucket: S3_BUCKET_NAME,
-            Key: `__outputs/${key}`,
+            Key: `__outputs/${s3Key}`,
         });
 
         const response = await s3Client.send(command);
@@ -77,8 +85,8 @@ app.use(async (req, res) => {
             res.status(500).send("Internal Server Error");
         }
     }
-})
+});
 
 app.listen(PORT, () => {
     console.log(`Reverse Proxy Running on Port ${PORT}`);
-})
+});
