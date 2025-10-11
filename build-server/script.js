@@ -79,6 +79,13 @@ async function init() {
         }
         publishLog(`Done`)
         console.log('Done...')
+
+        try {
+            await publisher.quit();
+        } catch (error) {
+            console.error('Error closing Redis client:', error);
+        }
+
     })
 
     publisher.on("error", (e) => {
